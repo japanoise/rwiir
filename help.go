@@ -85,6 +85,8 @@ func helpscreen(s tcell.Screen) {
 		termutil.PrintStringStyle(s, colAnc, 12, "F1", inverse)
 		termutil.PrintString(s, colAnc, 13, "F2 Sidebar")
 		termutil.PrintStringStyle(s, colAnc, 13, "F2", inverse)
+		termutil.PrintString(s, colAnc, 14, "F6 Configuration")
+		termutil.PrintStringStyle(s, colAnc, 14, "F6", inverse)
 		termutil.PrintString(s, colAnc, 21, "^S Save ^C New file")
 		termutil.PrintStringStyle(s, colAnc, 21, "^S", inverse)
 		termutil.PrintStringStyle(s, colAnc+8, 21, "^C", inverse)
