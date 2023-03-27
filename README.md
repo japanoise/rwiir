@@ -37,10 +37,6 @@ explicitly selected for export.
 ## Roadmap/Future Plans
 
 * A corkboard/outliner/other features not in MVP
-* Configuration
-  - To use CUA bindings
-  - To change theming
-  - To allow changing the text width
 * More element types
   - Tables
   - Lists
