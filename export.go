@@ -213,7 +213,7 @@ func (state *State) doExport(frmt outputFormat, typ outputType,
 				exportTags{"<hr/>", "\n"},
 				exportTags{"<em>", "</em>"},
 				exportTags{"<u>", "</u>"},
-				exportTags{"<b>", "</b>"},
+				exportTags{"<strong>", "</strong>"},
 				[]exportTags{
 					{"<h0>", "</h0>\n"},
 					{"<h1>", "</h1>\n"},
