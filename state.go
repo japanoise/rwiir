@@ -201,6 +201,181 @@ func (c *Config) style2style(sty Style) tcell.Style {
 	return tcell.StyleDefault
 }
 
+func xdg_config_home() string {
+	retval := os.Getenv("XDG_CONFIG_HOME")
+	if retval != "" {
+		return retval
+	}
+	var err error
+	retval, err = os.UserHomeDir()
+	if err != nil {
+		// Ooofies, well, hope that tilde expansion works!
+		return "~/.config"
+	}
+
+	return retval + "/.config"
+}
+
+func (c *Config) save() error {
+	dir := xdg_config_home() + "/rwiir"
+	err := os.MkdirAll(dir, 0755)
+
+	if err != nil {
+		return err
+	}
+
+	fn := dir + "/rwiir.conf"
+
+	fi, err := os.Create(fn)
+	if err != nil {
+		return err
+	}
+
+	defer fi.Close()
+
+	var serializeStyle = func(key string, sty tcell.Style) {
+		fg, bg, attr := sty.Decompose()
+		fmt.Fprintf(fi, "%s.fg=%d\n", key, fg)
+		fmt.Fprintf(fi, "%s.bg=%d\n", key, bg)
+		fmt.Fprintf(fi, "%s.attr=%d\n", key, attr)
+	}
+
+	fmt.Fprintf(fi, "Width=%d\n", c.Width)
+	serializeStyle("Warning", c.Warning)
+	serializeStyle("Underline", c.Underline)
+	serializeStyle("Italic", c.Italic)
+	serializeStyle("ItUnd", c.ItUnd)
+	serializeStyle("Bold", c.Bold)
+	serializeStyle("BoldIt", c.BoldIt)
+	serializeStyle("UndBold", c.UndBold)
+	serializeStyle("BoldUndIt", c.BoldUndIt)
+	serializeStyle("Header", c.Header)
+	serializeStyle("Rule", c.Rule)
+	serializeStyle("Modeline", c.Modeline)
+	serializeStyle("Dired", c.Dired)
+	if c.CUA {
+		fmt.Fprintf(fi, "CUA=on\n")
+	} else {
+		fmt.Fprintf(fi, "CUA=off\n")
+	}
+
+	return nil
+}
+
+func (c *Config) load() error {
+	c.defaults()
+
+	dir := xdg_config_home() + "/rwiir"
+	err := os.MkdirAll(dir, 0755)
+
+	if err != nil {
+		return err
+	}
+
+	fn := dir + "/rwiir.conf"
+
+	fi, err := os.Open(fn)
+	if err != nil {
+		return err
+	}
+
+	defer fi.Close()
+
+	styles := make(map[string]*tcell.Style)
+	styles["Warning"] = &c.Warning
+	styles["Underline"] = &c.Underline
+	styles["Italic"] = &c.Italic
+	styles["ItUnd"] = &c.ItUnd
+	styles["Bold"] = &c.Bold
+	styles["BoldIt"] = &c.BoldIt
+	styles["UndBold"] = &c.UndBold
+	styles["BoldUndIt"] = &c.BoldUndIt
+	styles["Header"] = &c.Header
+	styles["Rule"] = &c.Rule
+	styles["Modeline"] = &c.Modeline
+	styles["Dired"] = &c.Dired
+
+	scanner := bufio.NewScanner(fi)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		equ := strings.Split(line, "=")
+		if len(equ) != 2 {
+			continue
+		}
+
+		lhs := strings.TrimSpace(equ[0])
+		rhs := strings.TrimSpace(equ[1])
+
+		dots := strings.Split(lhs, ".")
+		if len(dots) == 1 {
+			if lhs == "Width" {
+				n, err := strconv.Atoi(rhs)
+				if err == nil {
+					c.Width = n
+				}
+			} else if lhs == "CUA" {
+				if rhs == "on" {
+					c.CUA = true
+				} else if rhs == "off" {
+					c.CUA = false
+				}
+			}
+			continue
+		}
+
+		if len(dots) != 2 {
+			continue
+		}
+
+		sty := styles[dots[0]]
+		switch dots[1] {
+		case "fg":
+			n, err := strconv.ParseUint(rhs, 10, 64)
+			if err == nil {
+				*sty = sty.Foreground(tcell.Color(n))
+			}
+		case "bg":
+			n, err := strconv.ParseUint(rhs, 10, 64)
+			if err == nil {
+				*sty = sty.Background(tcell.Color(n))
+			}
+		case "attr":
+			n, err := strconv.Atoi(rhs)
+			if err == nil {
+				*sty = sty.Attributes(tcell.AttrMask(n))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (config *Config) defaults() {
+	config.Width = 79
+	config.Warning =
+		tcell.StyleDefault.Foreground(tcell.ColorRed).Reverse(true)
+	config.Italic = tcell.StyleDefault.Attributes(tcell.AttrItalic)
+	config.Bold = tcell.StyleDefault.Attributes(tcell.AttrBold)
+	config.Underline = tcell.StyleDefault.Attributes(tcell.AttrUnderline)
+	config.Header = tcell.StyleDefault.Foreground(tcell.ColorGreen).
+		Attributes(tcell.AttrBold | tcell.AttrUnderline)
+	config.Rule = tcell.StyleDefault.Foreground(tcell.ColorBlue)
+	config.ItUnd = tcell.StyleDefault.Attributes(
+		tcell.AttrItalic | tcell.AttrUnderline)
+	config.UndBold = tcell.StyleDefault.Attributes(
+		tcell.AttrUnderline | tcell.AttrBold)
+	config.BoldIt = tcell.StyleDefault.Attributes(
+		tcell.AttrItalic | tcell.AttrBold)
+	config.BoldUndIt = tcell.StyleDefault.Attributes(
+		tcell.AttrUnderline | tcell.AttrItalic | tcell.AttrBold)
+	config.Modeline = tcell.StyleDefault.Reverse(true)
+	config.Dired = tcell.StyleDefault.Foreground(
+		tcell.ColorFuchsia).Attributes(tcell.AttrBold)
+	config.CUA = false
+}
+
 type Buffer struct {
 	Elems  []Element
 	Nelems int

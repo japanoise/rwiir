@@ -57,27 +57,8 @@ func main() {
 	}()
 
 	config := &Config{}
-	config.Width = 79
-	config.Warning =
-		tcell.StyleDefault.Foreground(tcell.ColorRed).Reverse(true)
-	config.Italic = tcell.StyleDefault.Attributes(tcell.AttrItalic)
-	config.Bold = tcell.StyleDefault.Attributes(tcell.AttrBold)
-	config.Underline = tcell.StyleDefault.Attributes(tcell.AttrUnderline)
-	config.Header = tcell.StyleDefault.Foreground(tcell.ColorGreen).
-		Attributes(tcell.AttrBold | tcell.AttrUnderline)
-	config.Rule = tcell.StyleDefault.Foreground(tcell.ColorBlue)
-	config.ItUnd = tcell.StyleDefault.Attributes(
-		tcell.AttrItalic | tcell.AttrUnderline)
-	config.UndBold = tcell.StyleDefault.Attributes(
-		tcell.AttrUnderline | tcell.AttrBold)
-	config.BoldIt = tcell.StyleDefault.Attributes(
-		tcell.AttrItalic | tcell.AttrBold)
-	config.BoldUndIt = tcell.StyleDefault.Attributes(
-		tcell.AttrUnderline | tcell.AttrItalic | tcell.AttrBold)
-	config.Modeline = tcell.StyleDefault.Reverse(true)
-	config.Dired = tcell.StyleDefault.Foreground(
-		tcell.ColorFuchsia).Attributes(tcell.AttrBold)
-	config.CUA = false
+
+	config.load()
 
 	renderCallback = func(scr tcell.Screen, sx, sy int) {
 		render(scr, sx, sy, state, config)
@@ -111,13 +92,18 @@ func main() {
 				click(state, config, sx, sy, ev)
 			}
 		case *tcell.EventKey:
-			if ev.Key() == tcell.KeyF1 {
+			switch ev.Key() {
+			case tcell.KeyF1:
 				helpscreen(s)
 				continue
-			} else if ev.Key() == tcell.KeyF2 {
+			case tcell.KeyF2:
 				state.sidebar = !state.sidebar
 				continue
+			case tcell.KeyF6:
+				configure(s, config)
+				continue
 			}
+
 			key := termutil.ParseTcellEvent(ev)
 			if config.CUA {
 				switch key {
